@@ -84,10 +84,13 @@ private val WEEKDAY_JA = listOf("月曜日", "火曜日", "水曜日", "木曜�
 
 /* ------------------------------------------------------------------- scale */
 
-/** 设计稿是 2560×1600，k = 1 dp 对应多少设计像素。 */
-private class S(val k: Float) {
-    fun d(v: Float): Dp = (v * k).dp
-    fun t(v: Float): TextUnit = (v * k).sp
+/**
+ * 设计稿是 2560×1600。d() 走 dp（不受字体缩放影响），
+ * t() 直接从像素换算成 sp，保证任何系统字体缩放下字号都精确等于设计像素。
+ */
+private class S(val kDp: Float, val kPx: Float, val density: Density) {
+    fun d(v: Float): Dp = (v * kDp).dp
+    fun t(v: Float): TextUnit = with(density) { (v * kPx).toSp() }
 }
 
 /* -------------------------------------------------------------------- root */
@@ -135,9 +138,10 @@ fun ClockScreen() {
             .fillMaxSize()
             .background(Color(0xFF1B1224))
     ) {
-        val s = S(maxWidth.value / 2560f)
         val density = LocalDensity.current
         CompositionLocalProvider(LocalDensity provides Density(density.density, 1f)) {
+            val kPx = constraints.maxWidth / 2560f
+            val s = S(kDp = maxWidth.value / 2560f, kPx = kPx, density = LocalDensity.current)
             ClockContent(now = now, weather = weather, s = s)
         }
     }
